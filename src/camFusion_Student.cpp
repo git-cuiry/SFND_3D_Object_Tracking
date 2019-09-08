@@ -154,5 +154,34 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
-    // ...
+	std::map<int, std::map<int, int>> scores;
+
+	// We iterate all the matched points
+	for (const auto& match : currFrame.kptMatches) {
+		// We search for the bbox in where the current match lies on in the previous image
+		for (const auto& bboxPrev : prevFrame.boundingBoxes) {
+			if (bboxPrev.roi.contains(prevFrame.keypoints[match.queryIdx].pt)) {
+
+				// We search for the bbox in where the current match lies on in the current image
+				for (const auto& bboxCurrent : currFrame.boundingBoxes) {
+					if (bboxCurrent.roi.contains(currFrame.keypoints[match.trainIdx].pt)) {
+						// We increment the number of matched points for the combinarion [prev. bbox][current bbox]
+						scores[bboxPrev.boxID][bboxCurrent.boxID]++;
+						break;
+					}
+				}
+				break;
+			}
+		}
+	}
+
+	for (const auto& sourceBBox : scores) {
+		auto better = make_pair(-1, -1);
+		for (const auto& destinationBBox : sourceBBox.second) {
+			if (destinationBBox.second > better.second)
+				better = destinationBBox;
+		}
+
+		bbBestMatches[sourceBBox.first] = better.first;
+	}
 }
