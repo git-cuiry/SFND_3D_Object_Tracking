@@ -144,11 +144,36 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
     // ...
 }
 
+double CalculateMedianDistanceFromCar(const std::vector<LidarPoint>& lidarPoints)
+{
+	const auto nPoints = lidarPoints.size();
+
+	std::vector<double> distances;
+	distances.resize(nPoints);
+
+	const auto ptr = lidarPoints.begin();
+
+	for (std::size_t i = 0; i < nPoints; i++)
+		distances[i] = (ptr + i)->x;
+
+	std::sort(distances.begin(), distances.end());
+	return distances[nPoints / 2];
+}
 
 void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
                      std::vector<LidarPoint> &lidarPointsCurr, double frameRate, double &TTC)
 {
-    // ...
+	// find closest distance to Lidar points 
+
+	// I think the best solution for to make it robust is to calculate the median as we did in Lesson 3: Engineering a	Collision Detection System/3. Estimating TTC with a Camera
+	const auto minXPrev = CalculateMedianDistanceFromCar(lidarPointsPrev);
+	const auto minXCurr = CalculateMedianDistanceFromCar(lidarPointsCurr);
+
+	// auxiliary variables
+	const auto dT = 1.0 / frameRate; // time between two measurements in seconds
+
+									 // compute TTC from both measurements
+	TTC = minXCurr * dT / (minXPrev - minXCurr);
 }
 
 
