@@ -129,19 +129,113 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
     }
 }
 
-
-// associate a given bounding box with the keypoints it contains
-void clusterKptMatchesWithROI(BoundingBox &boundingBox, std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr, std::vector<cv::DMatch> &kptMatches)
+double CalculateMedian(std::vector<double>& data)
 {
-    // ...
+	std::sort(data.begin(), data.end());
+
+	const auto midPoint = data.size() / 2;
+
+	if (0 == data.size() % 2)
+		return (data[midPoint - 1] + data[midPoint]) / 2.0;
+	else
+		return data[midPoint];
+}
+
+double CalculateStdDeviation(const std::vector<double>& values)
+{
+	const auto mean = std::accumulate(values.begin(), values.end(), 0.0)/values.size();
+	auto amount = 0.0;
+	for (auto value : values)
+		amount += (value - mean) * (value - mean);
+	amount /= (values.size() - 1);
+	return sqrt(amount);
+}
+
+#define SHOW_REFUSED_KEYPOINTS
+// associate a given bounding box with the keypoints it contains
+void clusterKptMatchesWithROI(const BoundingBox &prevBoundingBox, BoundingBox& currBoundingBox, std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr, std::vector<cv::DMatch> &kptMatches)
+{
+	// Step 1: Find the matches inside bounding boxes in previous image and in the current one
+	std::vector<cv::DMatch> candidates;
+	for (const auto& match : kptMatches) {
+		if (prevBoundingBox.roi.contains(kptsPrev[match.queryIdx].pt) && 
+			currBoundingBox.roi.contains(kptsCurr[match.trainIdx].pt)) 
+		{
+			candidates.push_back(match);
+		}
+	}
+
+	vector<vector<double>> distancesMatrix(candidates.size());
+
+	for (size_t i=0; i<candidates.size() - 1; i++)
+	{ 
+		const auto& currMatch = candidates[i];
+
+		// get current keypoint and its matched partner in the prev. frame
+		const auto& kpOuterCurr = kptsCurr.at(currMatch.trainIdx);
+		const auto& kpOuterPrev = kptsPrev.at(currMatch.queryIdx);
+
+		for (size_t j=i+1; j<candidates.size(); j++)
+		{
+			const auto& otherMatch = candidates[j];
+
+			auto minDist = 0.0; // min. required distance
+
+			// get next keypoint and its matched partner in the prev. frame
+			const auto& kpInnerCurr = kptsCurr.at(otherMatch.trainIdx);
+			const auto& kpInnerPrev = kptsPrev.at(otherMatch.queryIdx);
+
+			// compute distances and distance ratios
+			auto distCurr = cv::norm(kpOuterCurr.pt - kpInnerCurr.pt);
+			auto distPrev = cv::norm(kpOuterPrev.pt - kpInnerPrev.pt);
+
+			if (distPrev > std::numeric_limits<double>::epsilon() && distCurr >= minDist)
+			{ // avoid division by zero
+				auto distRatio = distCurr / distPrev;
+				distancesMatrix[i].push_back(distRatio);
+				distancesMatrix[j].push_back(distRatio);
+			}
+		} 
+	}
+
+	vector<double> medianDistanceRatios; // Median distance ratio between each match and the rest of matchs
+	for (auto& distRatio : distancesMatrix)
+		medianDistanceRatios.push_back(CalculateMedian(distRatio));
+
+	auto stdDev = CalculateStdDeviation(medianDistanceRatios);
+#ifdef SHOW_REFUSED_KEYPOINTS
+	cout << "Standard deviation: " << stdDev << endl;
+	cout << "2.5 times sd: " << 2.5 * stdDev << endl;
+	cout << "-------------------------------------------" << endl;
+#endif
+
+	const auto mean = std::accumulate(medianDistanceRatios.begin(), medianDistanceRatios.end(), 0.0) / medianDistanceRatios.size();
+
+	for (int i = 0; i < medianDistanceRatios.size(); i++) {
+#ifdef SHOW_REFUSED_KEYPOINTS
+		cout << medianDistanceRatios[i];
+#endif
+
+		if (medianDistanceRatios[i] > mean + 2.5 * stdDev ||
+			medianDistanceRatios[i] < mean - 2.5 * stdDev) {
+#ifdef SHOW_REFUSED_KEYPOINTS
+			cout << "*" << endl;
+#endif
+			continue; // outlier
+		}
+#ifdef SHOW_REFUSED_KEYPOINTS
+		cout << endl;
+#endif
+		currBoundingBox.kptMatches.push_back(candidates[i]);
+	}
 }
 
 
 // Compute time-to-collision (TTC) based on keypoint correspondences in successive images
-void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr, 
-                      std::vector<cv::DMatch> kptMatches, double frameRate, double &TTC, cv::Mat *visImg)
+void computeTTCCamera(std::vector<cv::KeyPoint>& kptsPrev, std::vector<cv::KeyPoint>& kptsCurr,
+	std::vector<cv::DMatch> kptMatches, double frameRate, double& TTC, cv::Mat* visImg)
 {
-    // ...
+	// ...
 }
 
 double CalculateMedianDistanceFromCar(const std::vector<LidarPoint>& lidarPoints)
