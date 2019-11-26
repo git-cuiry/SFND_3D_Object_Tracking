@@ -33,3 +33,8 @@ In this final project, you will implement the missing parts in the schematic. To
 2. Make a build directory in the top level project directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./3D_object_tracking`.
+
+## FP.1: Match 3D Objects
+
+First I've created a grid of matches in where in the rows I've previous bounding box ID, in the columns I've the number of matches located in each one of the current frame bounding boxes.
+After finish to fill thar grid of matches, I select the winner for each previoud bounding box ID.

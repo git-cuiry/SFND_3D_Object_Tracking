@@ -329,13 +329,14 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 
 	// We iterate all the matched points
 	for (const auto& match : currFrame.kptMatches) {
+		const auto& currFramePoint = currFrame.keypoints[match.trainIdx].pt;
+		
 		// We search for the bbox in where the current match lies on in the previous image
 		for (const auto& bboxPrev : prevFrame.boundingBoxes) {
 			if (bboxPrev.roi.contains(prevFrame.keypoints[match.queryIdx].pt)) {
-
 				// We search for the bbox in where the current match lies on in the current image
 				for (const auto& bboxCurrent : currFrame.boundingBoxes) {
-					if (bboxCurrent.roi.contains(currFrame.keypoints[match.trainIdx].pt)) {
+					if (bboxCurrent.roi.contains(currFramePoint)) {
 						// We increment the number of matched points for the combinarion [prev. bbox][current bbox]
 						scores[bboxPrev.boxID][bboxCurrent.boxID]++;
 						break;
