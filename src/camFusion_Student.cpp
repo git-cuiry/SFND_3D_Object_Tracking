@@ -325,8 +325,13 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
 
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame)
 {
-	std::map<int, std::map<int, int>> scores;
-
+	const auto rows = prevFrame.boundingBoxes.size();
+	const auto cols = currFrame.boundingBoxes.size();
+	
+	const std::unique_ptr<int[]> scores(new int[rows * cols]);
+	for (auto i = 0; i < prevFrame.boundingBoxes.size() * currFrame.boundingBoxes.size(); i++)
+		scores[i] = 0;
+	
 	// We iterate all the matched points
 	for (const auto& match : currFrame.kptMatches) {
 		const auto& currFramePoint = currFrame.keypoints[match.trainIdx].pt;
@@ -338,7 +343,7 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 				for (const auto& bboxCurrent : currFrame.boundingBoxes) {
 					if (bboxCurrent.roi.contains(currFramePoint)) {
 						// We increment the number of matched points for the combinarion [prev. bbox][current bbox]
-						scores[bboxPrev.boxID][bboxCurrent.boxID]++;
+						scores[cols * bboxPrev.boxID + bboxCurrent.boxID]++;
 						break;
 					}
 				}
@@ -347,13 +352,34 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 		}
 	}
 
-	for (const auto& sourceBBox : scores) {
-		auto better = make_pair(-1, -1);
-		for (const auto& destinationBBox : sourceBBox.second) {
-			if (destinationBBox.second > better.second)
-				better = destinationBBox;
+	for (size_t row = 0; row < rows; row++)
+	{
+		auto bestColumn = 0;
+		auto bestScore = scores[cols * row + bestColumn];
+		for(size_t col=1; col < cols; col++)
+		{
+			if (scores[cols * row + col] > bestScore) {
+				bestColumn = col;
+				bestScore = scores[cols * row + bestColumn];
+			}
 		}
 
-		bbBestMatches[sourceBBox.first] = better.first;
+		// Best will be the winner if and only if it is the winner in the column
+		auto isBest = true;
+		for(size_t row2 =0; row2<rows; row2++)
+		{
+			if (row2 == row)
+				continue;
+
+			if(scores[cols * row2 + bestColumn] > bestScore)
+			{
+				isBest = false;
+				break;
+			}	
+		}
+
+		if (isBest) {
+			bbBestMatches[row] = bestColumn;
+		}
 	}
 }
