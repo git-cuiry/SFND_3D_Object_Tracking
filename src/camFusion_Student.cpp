@@ -327,15 +327,15 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 {
 	const auto rows = prevFrame.boundingBoxes.size();
 	const auto cols = currFrame.boundingBoxes.size();
-	
+
 	const std::unique_ptr<int[]> scores(new int[rows * cols]);
 	for (auto i = 0; i < prevFrame.boundingBoxes.size() * currFrame.boundingBoxes.size(); i++)
 		scores[i] = 0;
-	
+
 	// We iterate all the matched points
 	for (const auto& match : currFrame.kptMatches) {
 		const auto& currFramePoint = currFrame.keypoints[match.trainIdx].pt;
-		
+
 		// We search for the bbox in where the current match lies on in the previous image
 		for (const auto& bboxPrev : prevFrame.boundingBoxes) {
 			if (bboxPrev.roi.contains(prevFrame.keypoints[match.queryIdx].pt)) {
@@ -352,11 +352,30 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 		}
 	}
 
+#ifdef PRINT_TABLES_BOUNDING_BOXES
+	std::cout << "\t";
+	for (size_t col = 0; col < cols; col++)
+		std::cout << col << "\t";
+
+	std::cout << endl;
+
+	for (size_t row = 0; row < rows; row++)
+	{
+		std::cout << row << "\t";
+		for (size_t col = 0; col < cols; col++)
+			std::cout << scores[cols * row + col] << "\t";
+
+		std::cout << "\n";
+	}
+
+	std::cout << "\n";
+#endif
+
 	for (size_t row = 0; row < rows; row++)
 	{
 		auto bestColumn = 0;
 		auto bestScore = scores[cols * row + bestColumn];
-		for(size_t col=1; col < cols; col++)
+		for (size_t col = 1; col < cols; col++)
 		{
 			if (scores[cols * row + col] > bestScore) {
 				bestColumn = col;
@@ -366,20 +385,23 @@ void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bb
 
 		// Best will be the winner if and only if it is the winner in the column
 		auto isBest = true;
-		for(size_t row2 =0; row2<rows; row2++)
+		for (size_t row2 = 0; row2 < rows; row2++)
 		{
 			if (row2 == row)
 				continue;
 
-			if(scores[cols * row2 + bestColumn] > bestScore)
+			if (scores[cols * row2 + bestColumn] > bestScore)
 			{
 				isBest = false;
 				break;
-			}	
+			}
 		}
 
 		if (isBest) {
 			bbBestMatches[row] = bestColumn;
+#ifdef PRINT_TABLES_BOUNDING_BOXES
+			cout << row << "=" << bestColumn << "\n";
+#endif
 		}
 	}
 }
