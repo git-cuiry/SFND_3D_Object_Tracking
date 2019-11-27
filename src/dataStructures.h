@@ -7,6 +7,7 @@
 #include <opencv2/core.hpp>
 
 //#define PRINT_TABLES_BOUNDING_BOXES
+//#define CREATE_PNG_AVI_BOUNDING_BOXES
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity
@@ -20,6 +21,9 @@ struct BoundingBox { // bounding box around a classified object (contains both 2
     cv::Rect roi; // 2D region-of-interest in image coordinates
     int classID; // ID based on class file provided to YOLO framework
     double confidence; // classification trust
+#ifdef CREATE_PNG_AVI_BOUNDING_BOXES
+	cv::Scalar color;
+#endif
 
     std::vector<LidarPoint> lidarPoints; // Lidar 3D points which project into 2D image roi
     std::vector<cv::KeyPoint> keypoints; // keypoints enclosed by 2D roi

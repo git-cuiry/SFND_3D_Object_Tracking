@@ -224,6 +224,22 @@ int main(int argc, const char *argv[])
             // store matches in current data frame
             (dataBuffer.end()-1)->bbMatches = bbBestMatches;
 
+#ifdef CREATE_PNG_AVI_BOUNDING_BOXES
+				auto visImg = (dataBuffer.end() - 1)->cameraImg.clone();
+
+				for (auto& bb : (dataBuffer.end() - 1)->boundingBoxes)
+				{
+					// This bounding box maybe has a match with a previous bounding box or not. In case it has a match, we get the color from the previous
+					for(const auto& match : bbBestMatches)
+					{
+						if (match.second == bb.boxID)
+							bb.color = (dataBuffer.end() - 2)->boundingBoxes[match.first].color;
+					}
+					cv::rectangle(visImg, cv::Point(bb.roi.x, bb.roi.y), cv::Point(bb.roi.x + bb.roi.width, bb.roi.y + bb.roi.height), bb.color, 2);
+					cv::imwrite(cv::format("boundingBox%d.png", dataBuffer.size() - 1), visImg);
+				}
+#endif
+        	
             cout << "#8 : TRACK 3D OBJECT BOUNDING BOXES done" << endl;
 
 
