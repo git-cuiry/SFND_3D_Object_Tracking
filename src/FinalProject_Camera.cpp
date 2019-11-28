@@ -113,6 +113,12 @@ int main(int argc, const char *argv[])
         std::vector<LidarPoint> lidarPoints;
         loadLidarFromFile(lidarPoints, lidarFullFilename);
 
+#ifdef SHOW_LIDAR_TOPVIEW_WITH_GROUND
+		showLidarTopviewAndCreatePng(lidarPoints, cv::Size(10.0, 20.0), (dataBuffer.end() - 1)->cameraImg, dataBuffer.size(), false );
+#endif
+#ifdef SHOW_LIDAR_TOPVIEW_WITHOUTH_GROUND
+		showLidarTopviewAndCreatePng(lidarPoints, cv::Size(10.0, 20.0), (dataBuffer.end() - 1)->cameraImg, dataBuffer.size(), true );
+#endif
         // remove Lidar points based on distance properties
         float minZ = -1.5, maxZ = -0.9, minX = 2.0, maxX = 20.0, maxY = 2.0, minR = 0.1; // focus on ego lane
         cropLidarPoints(lidarPoints, minX, maxX, maxY, minZ, maxZ, minR);

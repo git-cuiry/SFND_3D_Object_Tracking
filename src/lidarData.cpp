@@ -52,10 +52,31 @@ void loadLidarFromFile(vector<LidarPoint> &lidarPoints, string filename)
     fclose(stream);
 }
 
+template<typename T> T interpolate(T initialValue, T targetValue, double percentaje)
+{
+	return initialValue + (targetValue - initialValue) * percentaje;
+}
 
-void showLidarTopview(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, cv::Size imageSize, bool bWait)
+cv::Scalar DistanceToColor(double distance, double maxValue, const cv::Scalar& colorOrigin, const cv::Scalar& colorFar)
+{
+	// maxValue -- 1.0
+	// ditance -- x    -> x = distance / maxValue
+	auto percentaje = distance / maxValue;
+	return cv::Scalar(
+		interpolate(colorOrigin[0], colorFar[0], percentaje),
+		interpolate(colorOrigin[1], colorFar[1], percentaje),
+		interpolate(colorOrigin[2], colorFar[2], percentaje)
+	);
+}
+
+#if defined(SHOW_LIDAR_TOPVIEW_WITH_GROUND) || defined(SHOW_LIDAR_TOPVIEW_WITHOUTH_GROUND)
+void showLidarTopviewAndCreatePng(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, cv::Mat image, int index, bool deleteGround, bool bWait)
 {
     // create topview image
+	//worldSize.height --- image.rows
+	//worldSize.width ------------- x
+	cv::Size imageSize(worldSize.width*image.rows/worldSize.height, image.rows);
+
     cv::Mat topviewImg(imageSize, CV_8UC3, cv::Scalar(0, 0, 0));
 
     // plot Lidar points into image
@@ -67,7 +88,9 @@ void showLidarTopview(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, 
         int y = (-xw * imageSize.height / worldSize.height) + imageSize.height;
         int x = (-yw * imageSize.height / worldSize.height) + imageSize.width / 2;
 
-        cv::circle(topviewImg, cv::Point(x, y), 5, cv::Scalar(0, 0, 255), -1);
+		if (!deleteGround || (*it).z > -1.4)
+			cv::circle(topviewImg, cv::Point(x, y), 5, DistanceToColor(xw, 20.0, cv::Scalar(0, 0, 255), cv::Scalar(0, 255, 0)), -1);
+        //cv::circle(topviewImg, cv::Point(x, y), 5, cv::Scalar(0, 0, 255), -1);
     }
 
     // plot distance markers
@@ -79,15 +102,21 @@ void showLidarTopview(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, 
         cv::line(topviewImg, cv::Point(0, y), cv::Point(imageSize.width, y), cv::Scalar(255, 0, 0));
     }
 
+
+	cv::Mat finalImage(cv::Size(imageSize.width + image.cols, __max(imageSize.height, image.rows)), CV_8UC3, cv::Scalar(0, 0, 0));
+	topviewImg.copyTo(finalImage(cv::Rect(0, 0, imageSize.width, imageSize.height)));
+	image.copyTo(finalImage(cv::Rect(imageSize.width, 0, image.cols, image.rows)));
+
+//#ifdef CREATE_PNG_AVI_BOUNDING_BOXES
+	cv::imwrite(cv::format("lidar_plus_image%d.png", index), finalImage);
+//#endif
+
     // display image
     string windowName = "Top-View Perspective of LiDAR data";
     cv::namedWindow(windowName, 2);
-    cv::imshow(windowName, topviewImg);
-    if(bWait)
-    {
-        cv::waitKey(0); // wait for key to be pressed
-    }
+    cv::imshow(windowName, finalImage);
 }
+#endif
 
 void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT, cv::Mat *extVisImg)
 {
@@ -121,8 +150,8 @@ void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv:
 
             Y = P_rect_xx * R_rect_xx * RT * X;
             cv::Point pt;
-            pt.x = Y.at<double>(0, 0) / Y.at<double>(2, 0);
-            pt.y = Y.at<double>(1, 0) / Y.at<double>(2, 0);
+            pt.x = Y.at<double>(0, 0) / Y.at<double>(0, 2);
+            pt.y = Y.at<double>(1, 0) / Y.at<double>(0, 2);
 
             float val = it->x;
             int red = min(255, (int)(255 * abs((val - maxVal) / maxVal)));

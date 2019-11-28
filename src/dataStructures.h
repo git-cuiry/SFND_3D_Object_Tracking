@@ -8,6 +8,8 @@
 
 //#define PRINT_TABLES_BOUNDING_BOXES
 //#define CREATE_PNG_AVI_BOUNDING_BOXES
+//#define SHOW_LIDAR_TOPVIEW_WITH_GROUND
+//#define SHOW_LIDAR_TOPVIEW_WITHOUTH_GROUND
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity
