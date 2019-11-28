@@ -119,9 +119,12 @@ int main(int argc, const char *argv[])
 #ifdef SHOW_LIDAR_TOPVIEW_WITHOUTH_GROUND
 		showLidarTopviewAndCreatePng(lidarPoints, cv::Size(10.0, 20.0), (dataBuffer.end() - 1)->cameraImg, dataBuffer.size(), true );
 #endif
+
+#ifndef SHOW_LIDAR_CLUSTERING_WITHOUT_CROPPING
         // remove Lidar points based on distance properties
         float minZ = -1.5, maxZ = -0.9, minX = 2.0, maxX = 20.0, maxY = 2.0, minR = 0.1; // focus on ego lane
         cropLidarPoints(lidarPoints, minX, maxX, maxY, minZ, maxZ, minR);
+#endif
     
         (dataBuffer.end() - 1)->lidarPoints = lidarPoints;
 
@@ -230,22 +233,31 @@ int main(int argc, const char *argv[])
             // store matches in current data frame
             (dataBuffer.end()-1)->bbMatches = bbBestMatches;
 
+			// Match colors from previous bounding box
+			for (auto& bb : (dataBuffer.end() - 1)->boundingBoxes)
+			{
+				// This bounding box maybe has a match with a previous bounding box or not. In case it has a match, we get the color from the previous
+				for (const auto& match : bbBestMatches)
+				{
+					if (match.second == bb.boxID)
+						bb.color = (dataBuffer.end() - 2)->boundingBoxes[match.first].color;
+				}
+			}
+
 #ifdef CREATE_PNG_AVI_BOUNDING_BOXES
 				auto visImg = (dataBuffer.end() - 1)->cameraImg.clone();
 
 				for (auto& bb : (dataBuffer.end() - 1)->boundingBoxes)
 				{
-					// This bounding box maybe has a match with a previous bounding box or not. In case it has a match, we get the color from the previous
-					for(const auto& match : bbBestMatches)
-					{
-						if (match.second == bb.boxID)
-							bb.color = (dataBuffer.end() - 2)->boundingBoxes[match.first].color;
-					}
 					cv::rectangle(visImg, cv::Point(bb.roi.x, bb.roi.y), cv::Point(bb.roi.x + bb.roi.width, bb.roi.y + bb.roi.height), bb.color, 2);
 					cv::imwrite(cv::format("boundingBox%d.png", dataBuffer.size() - 1), visImg);
 				}
 #endif
-        	
+
+#if defined(SHOW_LIDAR_CLUSTERING_WITHOUT_CROPPING) || defined(SHOW_LIDAR_CLUSTERING_CROPPING)
+			show3DObjects((dataBuffer.end() - 1)->boundingBoxes, cv::Size(10.0, 20.0), (dataBuffer.end() - 1)->cameraImg, dataBuffer.size() - 1, false);
+#endif
+
             cout << "#8 : TRACK 3D OBJECT BOUNDING BOXES done" << endl;
 
 
@@ -279,6 +291,17 @@ int main(int argc, const char *argv[])
                     //// TASK FP.2 -> compute time-to-collision based on Lidar data (implement -> computeTTCLidar)
                     double ttcLidar; 
                     computeTTCLidar(prevBB->lidarPoints, currBB->lidarPoints, sensorFrameRate, ttcLidar);
+
+#ifdef CREATE_PNG_AVI_TTC_LIDAR
+					auto visImg = (dataBuffer.end() - 1)->cameraImg.clone();
+
+					for (auto& bb : (dataBuffer.end() - 1)->boundingBoxes)
+					{
+						cv::putText(visImg, cv::format("Time to collision (lidar): %.2f seconds", ttcLidar), cv::Point2d(30, 30), cv::FONT_HERSHEY_COMPLEX, 1, cv::Scalar(0,0,255));
+						cv::imwrite(cv::format("ttcLidar%d.png", dataBuffer.size() - 1), visImg);
+					}
+#endif
+
                     //// EOF STUDENT ASSIGNMENT
 
                     //// STUDENT ASSIGNMENT

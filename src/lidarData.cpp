@@ -90,7 +90,6 @@ void showLidarTopviewAndCreatePng(std::vector<LidarPoint> &lidarPoints, cv::Size
 
 		if (!deleteGround || (*it).z > -1.4)
 			cv::circle(topviewImg, cv::Point(x, y), 5, DistanceToColor(xw, 20.0, cv::Scalar(0, 0, 255), cv::Scalar(0, 255, 0)), -1);
-        //cv::circle(topviewImg, cv::Point(x, y), 5, cv::Scalar(0, 0, 255), -1);
     }
 
     // plot distance markers
@@ -107,9 +106,7 @@ void showLidarTopviewAndCreatePng(std::vector<LidarPoint> &lidarPoints, cv::Size
 	topviewImg.copyTo(finalImage(cv::Rect(0, 0, imageSize.width, imageSize.height)));
 	image.copyTo(finalImage(cv::Rect(imageSize.width, 0, image.cols, image.rows)));
 
-//#ifdef CREATE_PNG_AVI_BOUNDING_BOXES
 	cv::imwrite(cv::format("lidar_plus_image%d.png", index), finalImage);
-//#endif
 
     // display image
     string windowName = "Top-View Perspective of LiDAR data";

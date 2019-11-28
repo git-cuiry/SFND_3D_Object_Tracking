@@ -90,9 +90,7 @@ void detectObjects(cv::Mat& img, std::vector<BoundingBox>& bBoxes, float confThr
         bBox.roi = boxes[*it];
         bBox.classID = classIds[*it];
         bBox.confidence = confidences[*it];
-#ifdef CREATE_PNG_AVI_BOUNDING_BOXES
 		bBox.color = cv::Scalar(((double)rand() / (RAND_MAX + 1)) * 255, ((double)rand() / (RAND_MAX + 1)) * 255, ((double)rand() / (RAND_MAX + 1)) * 255);
-#endif
         bBox.boxID = (int)bBoxes.size(); // zero-based unique identifier for this bounding box
         
         bBoxes.push_back(bBox);

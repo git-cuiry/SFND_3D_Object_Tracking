@@ -29,8 +29,9 @@ void clusterLidarWithROI(std::vector<BoundingBox> &boundingBoxes, std::vector<Li
         // project Lidar point into camera
         Y = P_rect_xx * R_rect_xx * RT * X;
         cv::Point pt;
-        pt.x = Y.at<double>(0, 0) / Y.at<double>(2, 0); // pixel coordinates
-        pt.y = Y.at<double>(1, 0) / Y.at<double>(2, 0);
+		auto divisor = Y.at<double>(2, 0);
+        pt.x = Y.at<double>(0, 0) / divisor; // pixel coordinates
+        pt.y = Y.at<double>(1, 0) / divisor;
 
         vector<vector<BoundingBox>::iterator> enclosingBoxes; // pointers to all bounding boxes which enclose the current Lidar point
         for (vector<BoundingBox>::iterator it2 = boundingBoxes.begin(); it2 != boundingBoxes.end(); ++it2)
@@ -127,6 +128,83 @@ void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, 
     {
         cv::waitKey(0); // wait for key to be pressed
     }
+}
+
+void show3DObjects(std::vector<BoundingBox>& boundingBoxes, cv::Size worldSize, cv::Mat image, int index, bool bWait)
+{
+	// create topview image
+	//worldSize.height --- image.rows
+	//worldSize.width ------------- x
+	cv::Size imageSize(worldSize.width * image.rows / worldSize.height, image.rows);
+	cv::Mat topviewImg(imageSize, CV_8UC3, cv::Scalar(255, 255, 255));
+
+	for (auto it1 = boundingBoxes.begin(); it1 != boundingBoxes.end(); ++it1)
+	{
+		// create randomized color for current 3D object
+
+		// plot Lidar points into top view image
+		int top = 1e8, left = 1e8, bottom = 0.0, right = 0.0;
+		for (auto it2 = it1->lidarPoints.begin(); it2 != it1->lidarPoints.end(); ++it2)
+		{
+			// world coordinates
+			float xw = (*it2).x; // world position in m with x facing forward from sensor
+			float yw = (*it2).y; // world position in m with y facing left from sensor
+
+			if (yw < -worldSize.width / 2.0 ||
+				yw > worldSize.width / 2.0 ||
+				xw < 0 ||
+				xw > worldSize.height)
+				continue;
+
+			// top-view coordinates
+			int y = (-xw * imageSize.height / worldSize.height) + imageSize.height;
+			int x = (-yw * imageSize.width / worldSize.width) + imageSize.width / 2;
+
+			// find enclosing rectangle
+			top = top < y ? top : y;
+			left = left < x ? left : x;
+			bottom = bottom > y ? bottom : y;
+			right = right > x ? right : x;
+
+			// draw individual point
+			cv::circle(topviewImg, cv::Point(x, y), 4, it1->color, -1);
+		}
+
+		// draw enclosing rectangle
+		cv::rectangle(topviewImg, cv::Point(left, top), cv::Point(right, bottom), it1->color, 2);
+	}
+
+	// plot distance markers
+	float lineSpacing = 2.0; // gap between distance markers
+	int nMarkers = floor(worldSize.height / lineSpacing);
+	for (size_t i = 0; i < nMarkers; ++i)
+	{
+		int y = (-(i * lineSpacing) * imageSize.height / worldSize.height) + imageSize.height;
+		cv::line(topviewImg, cv::Point(0, y), cv::Point(imageSize.width, y), cv::Scalar(255, 0, 0));
+	}
+
+	cv::Mat finalImage(cv::Size(imageSize.width + image.cols, __max(imageSize.height, image.rows)), CV_8UC3, cv::Scalar(0, 0, 0));
+	topviewImg.copyTo(finalImage(cv::Rect(0, 0, imageSize.width, imageSize.height)));
+	image.copyTo(finalImage(cv::Rect(imageSize.width, 0, image.cols, image.rows)));
+
+	for (const auto& bb : boundingBoxes)
+	{
+		// This bounding box maybe has a match with a previous bounding box or not. In case it has a match, we get the color from the previous
+		cv::rectangle(finalImage, cv::Point(imageSize.width + bb.roi.x, bb.roi.y), cv::Point(imageSize.width + bb.roi.x + bb.roi.width, bb.roi.y + bb.roi.height), bb.color, 2);
+	}
+
+	cv::imwrite(cv::format("lidar_cluster_image%d.png", index), finalImage);
+
+
+	// display image
+	string windowName = "3D Objects with topview";
+	cv::namedWindow(windowName, 1);
+	cv::imshow(windowName, finalImage);
+
+	if (bWait)
+	{
+		cv::waitKey(0); // wait for key to be pressed
+	}
 }
 
 double CalculateMedian(std::vector<double>& data)
