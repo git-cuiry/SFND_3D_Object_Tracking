@@ -13,6 +13,9 @@
 //#define SHOW_LIDAR_CLUSTERING_WITHOUT_CROPPING
 //#define SHOW_LIDAR_CLUSTERING_CROPPING
 //#define CREATE_PNG_AVI_TTC_LIDAR
+//#define PRINT_TABLE_DIST_RATIO
+//#define PRINT_TABLE_MEAN_DIST_RATIO
+//#define SHOW_REFUSED_KEYPOINTS
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity

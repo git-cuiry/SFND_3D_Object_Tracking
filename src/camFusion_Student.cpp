@@ -229,7 +229,6 @@ double CalculateStdDeviation(const std::vector<double>& values)
 	return sqrt(amount);
 }
 
-#define SHOW_REFUSED_KEYPOINTS
 // associate a given bounding box with the keypoints it contains
 void clusterKptMatchesWithROI(const BoundingBox &prevBoundingBox, BoundingBox& currBoundingBox, std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr, std::vector<cv::DMatch> &kptMatches)
 {
@@ -244,7 +243,6 @@ void clusterKptMatchesWithROI(const BoundingBox &prevBoundingBox, BoundingBox& c
 	}
 
 	vector<vector<double>> distancesMatrix(candidates.size());
-
 	for (size_t i=0; i<candidates.size() - 1; i++)
 	{ 
 		const auto& currMatch = candidates[i];
@@ -276,33 +274,63 @@ void clusterKptMatchesWithROI(const BoundingBox &prevBoundingBox, BoundingBox& c
 		} 
 	}
 
+#ifdef PRINT_TABLE_DIST_RATIO
+	cout << "|";
+	for (size_t i = 0; i < distancesMatrix.size(); i++)
+		cout << "|" << i;
+	cout << "|" << endl;
+
+	cout << "|-" << endl;
+	for (size_t i = 0; i < distancesMatrix.size(); i++)
+		cout << "|-";
+	cout << "|" << endl;
+
+	for (size_t i = 0; i < distancesMatrix.size(); i++) {
+		cout << "|" << i;
+
+		for (size_t j = 0; j < distancesMatrix.size(); j++) {
+			if( j < i)
+				cout << "|";
+			else {
+				cout << "|" << distancesMatrix[i][j - i];
+			}
+		}
+
+		cout << "|" << endl;
+	}
+#endif
+
 	vector<double> medianDistanceRatios; // Median distance ratio between each match and the rest of matchs
 	for (auto& distRatio : distancesMatrix)
 		medianDistanceRatios.push_back(CalculateMedian(distRatio));
 
+#ifdef PRINT_TABLE_MEAN_DIST_RATIO
+	cout << "|Match|Median|" << endl;
+	cout << "|-|-|" << endl;
+
+	for (size_t i = 0; i < medianDistanceRatios.size(); i++) {
+		cout << "|" << i << "|" << medianDistanceRatios[i] << "|" << endl;
+	}
+#endif
+
+	const auto mean = std::accumulate(medianDistanceRatios.begin(), medianDistanceRatios.end(), 0.0) / medianDistanceRatios.size();
 	auto stdDev = CalculateStdDeviation(medianDistanceRatios);
 #ifdef SHOW_REFUSED_KEYPOINTS
+	cout << "Mean: " << mean << endl;
 	cout << "Standard deviation: " << stdDev << endl;
 	cout << "2.5 times sd: " << 2.5 * stdDev << endl;
 	cout << "-------------------------------------------" << endl;
 #endif
 
-	const auto mean = std::accumulate(medianDistanceRatios.begin(), medianDistanceRatios.end(), 0.0) / medianDistanceRatios.size();
-
 	for (int i = 0; i < medianDistanceRatios.size(); i++) {
-#ifdef SHOW_REFUSED_KEYPOINTS
-		cout << medianDistanceRatios[i];
-#endif
-
 		if (medianDistanceRatios[i] > mean + 2.5 * stdDev ||
 			medianDistanceRatios[i] < mean - 2.5 * stdDev) {
 #ifdef SHOW_REFUSED_KEYPOINTS
-			cout << "*" << endl;
+			cout << i << endl;
 #endif
 			continue; // outlier
 		}
 #ifdef SHOW_REFUSED_KEYPOINTS
-		cout << endl;
 #endif
 		currBoundingBox.kptMatches.push_back(candidates[i]);
 	}
