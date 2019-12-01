@@ -16,6 +16,7 @@
 //#define PRINT_TABLE_DIST_RATIO
 //#define PRINT_TABLE_MEAN_DIST_RATIO
 //#define SHOW_REFUSED_KEYPOINTS
+// define SHOW_TTC_CAMERA
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity
