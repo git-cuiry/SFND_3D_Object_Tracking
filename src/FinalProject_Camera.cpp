@@ -363,6 +363,11 @@ int main(int argc, const char* argv[])
 				} // eof TTC computation
 			} // eof loop over all BB matches            
 
+#ifdef SHOW_DISTANCE_LIDAR
+			std::ofstream output_stream("distancelidar.csv", std::ofstream::out | std::ofstream::app);
+			output_stream << ttcLidar << endl;
+			output_stream.close();
+#endif
 #ifdef CREATE_PNG_AVI_TTC_LIDAR
 			std::ofstream output_stream("lidar.csv", std::ofstream::out | std::ofstream::app);
 			output_stream << ttcLidar << endl;

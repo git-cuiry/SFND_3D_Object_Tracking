@@ -448,6 +448,11 @@ void computeTTCLidar(std::vector<LidarPoint>& lidarPointsPrev,
 	const auto minXPrev = CalculateMedianDistanceFromCar(lidarPointsPrev);
 	const auto minXCurr = CalculateMedianDistanceFromCar(lidarPointsCurr);
 
+#ifdef SHOW_DISTANCE_LIDAR
+	TTC = minXCurr;
+	return;
+#endif
+
 	// auxiliary variables
 	const auto dT = 1.0 / frameRate; // time between two measurements in seconds
 
