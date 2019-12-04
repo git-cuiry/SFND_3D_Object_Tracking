@@ -6,6 +6,7 @@
 #include <map>
 #include <opencv2/core.hpp>
 
+#define ANALYZE_ONLY_FIRST_BBOX
 //#define PRINT_TABLES_BOUNDING_BOXES
 //#define CREATE_PNG_AVI_BOUNDING_BOXES
 //#define SHOW_LIDAR_TOPVIEW_WITH_GROUND
@@ -16,7 +17,7 @@
 //#define PRINT_TABLE_DIST_RATIO
 //#define PRINT_TABLE_MEAN_DIST_RATIO
 //#define SHOW_REFUSED_KEYPOINTS
-// define SHOW_TTC_CAMERA
+//#define SHOW_TTC_CAMERA
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity

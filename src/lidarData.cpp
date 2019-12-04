@@ -115,7 +115,7 @@ void showLidarTopviewAndCreatePng(std::vector<LidarPoint> &lidarPoints, cv::Size
 }
 #endif
 
-void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT, cv::Mat *extVisImg)
+void showLidarImgOverlay(cv::Mat &img, const std::vector<LidarPoint> &lidarPoints, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT, cv::Mat *extVisImg, const cv::Scalar* color)
 {
     // init image for visualization
     cv::Mat visImg; 
@@ -147,14 +147,18 @@ void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv:
 
             Y = P_rect_xx * R_rect_xx * RT * X;
             cv::Point pt;
-            pt.x = Y.at<double>(0, 0) / Y.at<double>(0, 2);
-            pt.y = Y.at<double>(1, 0) / Y.at<double>(0, 2);
+            pt.x = Y.at<double>(0, 0) / Y.at<double>(2, 0);
+            pt.y = Y.at<double>(1, 0) / Y.at<double>(2, 0);
 
-            float val = it->x;
-            int red = min(255, (int)(255 * abs((val - maxVal) / maxVal)));
-            int green = min(255, (int)(255 * (1 - abs((val - maxVal) / maxVal))));
-            cv::circle(overlay, pt, 5, cv::Scalar(0, green, red), -1);
-    }
+			if (color == nullptr) {
+				float val = it->x;
+				int red = min(255, (int)(255 * abs((val - maxVal) / maxVal)));
+				int green = min(255, (int)(255 * (1 - abs((val - maxVal) / maxVal))));
+				cv::circle(overlay, pt, 5, cv::Scalar(0, green, red), -1);
+			}
+			else
+				cv::circle(overlay, pt, 5, *color, -1);
+	}
 
     float opacity = 0.6;
     cv::addWeighted(overlay, opacity, visImg, 1 - opacity, 0, visImg);

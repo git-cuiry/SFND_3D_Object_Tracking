@@ -13,7 +13,7 @@ void clusterKptMatchesWithROI(const BoundingBox& prevBoundingBox, BoundingBox &b
 void matchBoundingBoxes(std::vector<cv::DMatch> &matches, std::map<int, int> &bbBestMatches, DataFrame &prevFrame, DataFrame &currFrame);
 
 void show3DObjects(std::vector<BoundingBox> &boundingBoxes, cv::Size worldSize, cv::Size imageSize, bool bWait=true);
-void show3DObjects(std::vector<BoundingBox>& boundingBoxes, cv::Size worldSize, cv::Mat image, int index, bool bWait);
+void show3DObjects(const DataFrame& frame, cv::Size worldSize, cv::Mat image, int index, cv::Mat& P_rect_xx, cv::Mat& R_rect_xx, cv::Mat& RT, bool bWait);
 
 
 void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPoint> &kptsCurr,

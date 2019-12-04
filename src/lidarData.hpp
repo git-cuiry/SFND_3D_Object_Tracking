@@ -17,5 +17,5 @@ void showLidarTopview(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, 
 void showLidarTopviewAndCreatePng(std::vector<LidarPoint>& lidarPoints, cv::Size worldSize, cv::Mat image, int index, bool deleteGround, bool bWait = true);
 #endif
 
-void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT, cv::Mat *extVisImg=nullptr);
+void showLidarImgOverlay(cv::Mat &img, const std::vector<LidarPoint> &lidarPoints, cv::Mat &P_rect_xx, cv::Mat &R_rect_xx, cv::Mat &RT, cv::Mat *extVisImg=nullptr, const cv::Scalar* color=nullptr);
 #endif /* lidarData_hpp */
