@@ -17,8 +17,33 @@
 //#define PRINT_TABLE_DIST_RATIO
 //#define PRINT_TABLE_MEAN_DIST_RATIO
 //#define SHOW_REFUSED_KEYPOINTS
-//#define SHOW_TTC_CAMERA
-#define SHOW_DISTANCE_LIDAR
+#define SHOW_TTC_CAMERA
+//#define SHOW_DISTANCE_LIDAR
+#define ITERATE_ALL_DETECTORS
+#define ITERATE_ALL_DESCRIPTORS
+
+#ifdef ITERATE_ALL_DETECTORS
+static std::vector<std::string> detectorTypes{
+ /*   "SHITOMASI",*/
+//    "HARRIS",
+/*    "FAST",
+    "BRISK",*/
+    "ORB",
+/*    "AKAZE",
+    "SIFT"*/
+};
+#endif
+
+#ifdef ITERATE_ALL_DESCRIPTORS
+static std::vector<std::string> descriptorTypes{
+/*    "BRIEF",
+    "ORB",*/
+    "FREAK",
+    /*"AKAZE",
+    "SIFT"*/
+};
+#endif
+
 
 struct LidarPoint { // single lidar point in space
     double x,y,z,r; // x,y,z in [m], r is point reflectivity
